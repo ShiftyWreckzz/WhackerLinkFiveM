@@ -36,6 +36,27 @@ function addStaticNoise(audioBuffer, noiseLevel) {
     return audio.buffer;
 }
 
+function applyInputGain(audioBuffer, gainMultiplier) {
+    if (!gainMultiplier || gainMultiplier === 1.0) {
+        return audioBuffer;
+    }
+    
+    const audio = new Int16Array(audioBuffer);
+    for (let i = 0; i < audio.length; i++) {
+        let sample = audio[i] * gainMultiplier;
+        
+        // Prevent hard clipping by soft limiting
+        if (sample > 32767) {
+            sample = 32767;
+        } else if (sample < -32768) {
+            sample = -32768;
+        }
+        
+        audio[i] = Math.round(sample);
+    }
+    return audio.buffer;
+}
+
 function insertDropouts(audioBuffer, gapLength, gapFrequency) {
     const audio = new Int16Array(audioBuffer);
     for (let i = 0; i < audio.length; i += gapLength) {

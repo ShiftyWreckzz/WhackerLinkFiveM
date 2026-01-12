@@ -102,11 +102,20 @@ function socketOpen() {
 }
 
 let beepVolumeReduction = 0.6; // default value
+let audioGainConfig = {
+    enabled: true,
+    inputGain: 1.0,
+    outputGain: 1.0
+};
+
 fetch('/configs/config.yml')
   .then(response => response.text())
   .then(yamlText => {
     const lines = yamlText.split('\n');
+    let inAudioGainSection = false;
+    
     for (const line of lines) {
+      // Parse beepVolumeReduction
       const matchBeepVolume = line.match(/^\s*beepVolumeReduction\s*:\s*([0-9.]+)\s*$/i);
       if (matchBeepVolume) {
         let parsed = parseFloat(matchBeepVolume[1]);
@@ -124,6 +133,48 @@ fetch('/configs/config.yml')
           beepVolumeReduction = parsed;
         }
       }
+      
+      // Parse audioGain section
+      if (line.match(/^\s*audioGain\s*:\s*$/i)) {
+        inAudioGainSection = true;
+        continue;
+      }
+      
+      if (inAudioGainSection) {
+        if (line.match(/^\s*[a-zA-Z]+\s*:\s*/) && !line.match(/^\s{2}/)) {
+          // We've hit a new top-level section, exit audioGain section
+          inAudioGainSection = false;
+        } else {
+          // Parse audioGain properties
+          const matchEnabled = line.match(/^\s+enabled\s*:\s*(true|false)\s*$/i);
+          const matchInputGain = line.match(/^\s+inputGain\s*:\s*([0-9.]+)\s*$/i);
+          const matchOutputGain = line.match(/^\s+outputGain\s*:\s*([0-9.]+)\s*$/i);
+          
+          if (matchEnabled) {
+            audioGainConfig.enabled = matchEnabled[1].toLowerCase() === 'true';
+          } else if (matchInputGain) {
+            let parsed = parseFloat(matchInputGain[1]);
+            if (!isNaN(parsed) && parsed >= 0.1 && parsed <= 10.0) {
+              audioGainConfig.inputGain = parsed;
+            } else {
+              console.warn('Invalid inputGain value in config.yml. Using default 1.0');
+            }
+          } else if (matchOutputGain) {
+            let parsed = parseFloat(matchOutputGain[1]);
+            if (!isNaN(parsed) && parsed >= 0.1 && parsed <= 5.0) {
+              audioGainConfig.outputGain = parsed;
+            } else {
+              console.warn('Invalid outputGain value in config.yml. Using default 1.0');
+            }
+          }
+        }
+      }
+    }
+    
+    // Apply audio gain settings to PCM player
+    if (audioGainConfig.enabled) {
+      pcmPlayer.setOutputGain(audioGainConfig.outputGain);
+      console.log('Audio gain configured:', audioGainConfig);
     }
   })
   .catch(err => {
@@ -1448,9 +1499,15 @@ function setLine3(text) {
 }
 
 function handleAudioData(data) {
-    const dataArray = new Uint8Array(data);
+    let dataArray = new Uint8Array(data);
 
     if (dataArray.length > 0) {
+        // Apply input gain if enabled and configured
+        if (audioGainConfig.enabled && audioGainConfig.inputGain !== 1.0) {
+            const processedBuffer = applyInputGain(dataArray.buffer, audioGainConfig.inputGain);
+            dataArray = new Uint8Array(processedBuffer);
+        }
+        
         pcmPlayer.feed(dataArray);
 
         const float32Array = new Float32Array(dataArray.length / 2);
@@ -1585,7 +1642,7 @@ function volumeUp() {
     if (volumeLevel < 1.0) {
         volumeLevel += 0.1;
         volumeLevel = Math.min(1.0, volumeLevel);
-        //beepAudioCtx.gainNode.gain.value = volumeLevel;
+        pcmPlayer.currentVolume = volumeLevel;
         pcmPlayer.volume(volumeLevel);
         beep(910, 500, 30, 'sine');
         console.log(`Volume increased: ${volumeLevel}`);
@@ -1602,7 +1659,7 @@ function volumeDown() {
     if (volumeLevel > 0.0) {
         volumeLevel -= 0.1;
         volumeLevel = Math.max(0.1, volumeLevel);
-        //beepAudioCtx.gainNode.gain.value = volumeLevel;
+        pcmPlayer.currentVolume = volumeLevel;
         pcmPlayer.volume(volumeLevel);
         beep(910, 500, 30, 'sine');
         console.log(`Volume decreased: ${volumeLevel}`);
