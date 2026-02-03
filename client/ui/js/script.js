@@ -444,6 +444,16 @@ window.addEventListener('message', async function (event) {
                 SendGroupVoiceRequest();
                 isVoiceRequested = true;
                 isVoiceGranted = false;
+
+                // This should prevent the 'stuck' state you can get in when trying to transmit while someone else already is
+                setTimeout(() => {
+                    if (isVoiceRequested && !isVoiceGranted) {
+                        console.debug("did not get response from WLS within 5 seconds"); // Timing might need tweaking I think 5 seconds is a fair timeout for most cases
+                        bonk()
+                        isVoiceRequested = false;
+                        isVoiceGrantHandled = false;
+                    }
+                }, 5000);
             } /*else {
                 isTxing = false;
                 document.getElementById("rssi-icon").src = `models/${radioModel}/icons/rssi${currentRssiLevel}.png`;
