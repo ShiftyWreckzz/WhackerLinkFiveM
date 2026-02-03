@@ -2,3 +2,13 @@ siteBlips: true
 disableAnimations: false
 # Beep volume reduction factor. 0.0 is full volume, 1.0 is silent
 beepVolumeReduction: 0.6
+# Audio gain settings for incoming radio audio
+audioGain:
+  # Input gain multiplier applied to raw audio data (1.0 = no change, 2.0 = double amplitude)
+  # Higher values may cause distortion. Recommended range: 0.5 - 3.0
+  inputGain: 1.0
+  # Output gain multiplier applied through Web Audio API (1.0 = no change)  
+  # This is cleaner than input gain and less likely to distort. Recommended range: 1.0 - 2.0
+  outputGain: 1.0
+  # Enable/disable audio gain processing
+  enabled: true

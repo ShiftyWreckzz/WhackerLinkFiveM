@@ -44,6 +44,8 @@ PCMPlayer.prototype.init = function(option) {
     this.interval = setInterval(this.flush, this.option.flushingTime);
     this.maxValue = this.getMaxValue();
     this.typedArray = this.getTypedArray();
+    this.currentVolume = 0.6;
+    this.outputGain = 1.0;
     this.createContext();
 };
 
@@ -115,8 +117,21 @@ PCMPlayer.prototype.volume = function(volume) {
         console.warn("Volume should be between 0 and 1. Clamping value.");
         volume = Math.max(0, Math.min(1, volume));
     }
-    this.gainNode.gain.value = volume;
-    console.log("Volume set to:", volume);
+    
+    // Apply both user volume and output gain if enabled
+    const effectiveVolume = volume * (this.outputGain || 1.0);
+    this.gainNode.gain.value = effectiveVolume;
+    console.log("Volume set to:", volume, "with output gain:", this.outputGain, "effective:", effectiveVolume);
+};
+
+PCMPlayer.prototype.setOutputGain = function(outputGain) {
+    if (typeof outputGain !== 'number' || outputGain < 0) {
+        console.warn("Output gain should be a positive number. Using 1.0");
+        outputGain = 1.0;
+    }
+    this.outputGain = outputGain;
+    // Re-apply current volume to incorporate the new gain
+    this.volume(this.currentVolume || 1.0);
 };
 
 PCMPlayer.prototype.destroy = function() {
