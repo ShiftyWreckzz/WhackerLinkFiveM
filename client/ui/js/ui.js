@@ -53,39 +53,34 @@ function saveUIState() {
         bottom: radioContainer.style.bottom || null,
         position: radioContainer.style.position || null,
         transform: `scale(${scaleFactor})` || null,
-        scale: scaleFactor,
+        scale: scaleFactor
     };
 
     fetch(`https://${GetParentResourceName()}/saveUIState`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uiState, model: radioModel }),
-    })
-        .then((response) => response.json())
-        .then((data) => {
+        body: JSON.stringify({ uiState, model: radioModel })
+    }).then(response => response.json())
+        .then(data => {
             if (data.status !== 'success') {
                 console.error('Failed to save UI state');
             }
-        })
-        .catch((err) => console.error('Error saving UI state:', err));
+        }).catch(err => console.error('Error saving UI state:', err));
 }
 
 function loadUIState() {
     fetch(`https://${GetParentResourceName()}/loadUIState`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: radioModel }),
-    })
-        .then((response) => response.json())
-        .then((data) => {
+        body: JSON.stringify({ model: radioModel })
+    }).then(response => response.json())
+        .then(data => {
             const uiState = data.uiState;
 
             if (uiState) {
                 if (uiState.right) radioContainer.style.right = uiState.right;
-                if (uiState.bottom)
-                    radioContainer.style.bottom = uiState.bottom;
-                if (uiState.position)
-                    radioContainer.style.position = uiState.position;
+                if (uiState.bottom) radioContainer.style.bottom = uiState.bottom;
+                if (uiState.position) radioContainer.style.position = uiState.position;
                 if (uiState.scale) scaleFactor = uiState.scale;
 
                 if (uiState.transform) {
@@ -96,9 +91,9 @@ function loadUIState() {
                     }
                 }
 
-                console.log('Used loaded UI state');
+                console.log("Used loaded UI state");
             } else {
-                console.log('No UI state set');
+                console.log("No UI state set");
                 radioContainer.style.right = null;
                 radioContainer.style.bottom = null;
                 radioContainer.style.left = 'auto';
@@ -110,7 +105,7 @@ function loadUIState() {
                 loadRadioModelAssets(radioModel);
             }
         })
-        .catch((err) => {
+        .catch(err => {
             console.error('Failed to load UI state:', err);
             resetUI();
             loadRadioModelAssets(radioModel);
@@ -175,12 +170,14 @@ document.getElementById('reset-position').addEventListener('click', () => {
 
 document.getElementById('drag-toggle').addEventListener('click', () => {
     isDragging = !isDragging;
-    document.getElementById('drag-toggle').textContent = isDragging ? 'Disable Drag' : 'Enable Drag';
+    document.getElementById('drag-toggle').textContent =
+        isDragging ? 'Disable Drag' : 'Enable Drag';
 });
 
 document.getElementById('scale-toggle').addEventListener('click', () => {
     isScaling = !isScaling;
-    document.getElementById('scale-toggle').textContent = isScaling ? 'Disable Scale' : 'Enable Scale';
+    document.getElementById('scale-toggle').textContent =
+        isScaling ? 'Disable Scale' : 'Enable Scale';
 });
 
 radioContainer.addEventListener('focus', () => {
